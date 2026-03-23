@@ -961,7 +961,8 @@ function getNodeAtPoint(x, y) {
     const node = nodes[i];
     const dx = node.x - x;
     const dy = node.y - y;
-    const hitRadius = Math.max(node.baseR * 2, 15); // generous hit area
+    const minHit = isMobile ? 35 : 15;
+    const hitRadius = Math.max(node.baseR * 2, minHit);
     if (dx * dx + dy * dy < hitRadius * hitRadius) {
       return node;
     }
