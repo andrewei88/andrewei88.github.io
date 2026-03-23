@@ -544,6 +544,78 @@
     opacity: 0.6;
     font-style: italic;
   }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 768px) {
+    .container {
+      padding: 24px 16px;
+    }
+    .header h1 {
+      font-size: 24px;
+      letter-spacing: 2px;
+    }
+    @keyframes headerIn {
+      0% { opacity: 0; transform: translateY(-16px); letter-spacing: 8px; }
+      100% { opacity: 1; transform: translateY(0); letter-spacing: 2px; }
+    }
+    .header .role {
+      font-size: 14px;
+    }
+    .contact-chip {
+      font-size: 10px;
+      padding: 5px 12px;
+      gap: 6px;
+    }
+    .summary {
+      padding: 16px 20px;
+      font-size: 13px;
+    }
+    .section-header {
+      font-size: 11px;
+    }
+    .skill-layer {
+      flex-direction: column;
+      gap: 8px;
+    }
+    .skill-layer-label {
+      text-align: left;
+      min-width: auto;
+      padding-top: 0;
+    }
+    .skill-node {
+      font-size: 12px;
+      padding: 4px 10px;
+    }
+    .exp-header {
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .exp-title {
+      font-size: 14px;
+    }
+    .exp-details {
+      padding: 0 14px 0 36px;
+    }
+    .expanded .exp-details {
+      padding-bottom: 14px;
+    }
+    .exp-details li {
+      font-size: 13px;
+    }
+    .exp-meta {
+      font-size: 10px;
+    }
+    .education-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .edu-item {
+      padding: 12px 16px;
+    }
+    .skill-hint {
+      display: none;
+    }
+  }
 </style>
 </head>
 <body>
@@ -897,32 +969,30 @@ function getNodeAtPoint(x, y) {
   return null;
 }
 
-canvas.addEventListener('mousedown', (e) => {
-  const node = getNodeAtPoint(e.clientX, e.clientY);
+function startDrag(x, y) {
+  const node = getNodeAtPoint(x, y);
   if (node) {
     dragNode = node;
     isDragging = true;
     dragNode.dragging = true;
     canvas.style.cursor = 'grabbing';
   }
-});
+}
 
-document.addEventListener('mousemove', (e) => {
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-
+function moveDrag(x, y) {
+  mouse.x = x;
+  mouse.y = y;
   if (isDragging && dragNode) {
-    dragNode.x = e.clientX;
-    dragNode.y = e.clientY;
+    dragNode.x = x;
+    dragNode.y = y;
   } else {
-    // Update cursor and hover state
-    const node = getNodeAtPoint(e.clientX, e.clientY);
+    const node = getNodeAtPoint(x, y);
     hoverNode = node;
     canvas.style.cursor = node ? 'grab' : 'default';
   }
-});
+}
 
-document.addEventListener('mouseup', () => {
+function endDrag() {
   if (dragNode) {
     // Fire pulses along all connected edges
     for (const node of nodes) {
@@ -947,12 +1017,33 @@ document.addEventListener('mouseup', () => {
   }
   isDragging = false;
   canvas.style.cursor = 'default';
-});
+}
+
+// Mouse events
+canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+document.addEventListener('mouseup', endDrag);
+
+// Touch events
+canvas.addEventListener('touchstart', (e) => {
+  const touch = e.touches[0];
+  startDrag(touch.clientX, touch.clientY);
+  if (dragNode) e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+  const touch = e.touches[0];
+  moveDrag(touch.clientX, touch.clientY);
+  if (isDragging) e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchend', endDrag);
 
 // Create nodes with z-depth for 3D effect
 // z: 0 = far away (small, dim, slow), 1 = close (big, bright, fast)
 const colors = ['#b4a0e8', '#6ba3f7', '#7dd3c0'];
-const nodeCount = 75;
+const isMobile = window.innerWidth < 768;
+const nodeCount = isMobile ? 30 : 75;
 for (let i = 0; i < nodeCount; i++) {
   const z = Math.random(); // depth: 0 = far, 1 = near
   nodes.push({
@@ -974,7 +1065,7 @@ nodes.sort((a, b) => a.z - b.z);
 
 // Background particles — distant "stars" for depth/texture
 const particles = [];
-const particleCount = 300;
+const particleCount = isMobile ? 100 : 300;
 for (let i = 0; i < particleCount; i++) {
   const pColors = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#b4a0e8', '#6ba3f7', '#7dd3c0'];
   particles.push({
