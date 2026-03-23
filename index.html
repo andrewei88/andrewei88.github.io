@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andrew Wei | Neural Resume</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Outfit:wght@400;500;600;700;800&family=Urbanist:wght@100;200;300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --border: #1e1e1e;
+    --text: #ffffff;
+    --text-muted: #a0a0a0;
+    --accent: #b4a0e8;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+
+  /* Cyberspace grid canvas (perspective grid + vignette) */
+  #gridCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Living network background */
+  #networkCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: auto;
+    cursor: default;
+  }
+
+  /* Vignette overlay */
+  .vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Subtle scan lines */
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    position: relative;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Re-enable pointer events on actual content */
+  .container section, .container header, .container a, .container .skill-node, .container .experience-item, .container .edu-item, .container .summary, .container .section, .container .contact-chip {
+    pointer-events: auto;
+  }
+
+  /* ── Scroll-reveal animations ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal.delay-1 { transition-delay: 0.1s; }
+  .reveal.delay-2 { transition-delay: 0.2s; }
+  .reveal.delay-3 { transition-delay: 0.3s; }
+  .reveal.delay-4 { transition-delay: 0.4s; }
+
+  /* Staggered skill nodes */
+  .skill-node {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+    transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .skill-node.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: #ffffff;
+    /* Header special entrance */
+    opacity: 0;
+    animation: headerIn 1s ease 0.2s forwards;
+  }
+  @keyframes headerIn {
+    0% { opacity: 0; transform: translateY(-16px); letter-spacing: 16px; }
+    100% { opacity: 1; transform: translateY(0); letter-spacing: 4px; }
+  }
+
+  .header .role {
+    font-size: 16px;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
+    letter-spacing: 1px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.6s forwards;
+  }
+
+  @keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Contact chip */
+  .contact-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 6px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0;
+    animation: fadeUp 0.6s ease 1s forwards;
+  }
+  .contact-chip a {
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  .contact-chip a:hover {
+    color: #ffffff;
+  }
+  .chip-sep {
+    width: 4px; height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+    vertical-align: middle;
+    box-shadow: 0 0 4px rgba(180, 160, 232, 0.4);
+  }
+
+  /* ── Summary ── */
+  .summary {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 40px;
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    position: relative;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    text-align: center;
+  }
+  .summary-inner {
+    display: inline-block;
+    text-align: left;
+  }
+  .summary-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .summary-dot {
+    width: 8px;
+    height: 8px;
+    min-width: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(180, 160, 232, 0.4);
+  }
+  .summary::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #b4a0e8, #6ba3f7, #7dd3c0, #b4a0e8);
+    background-size: 300% 300%;
+    background-position: 0% 50%;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.8s ease, background-position 0s;
+  }
+  .summary:hover::before {
+    animation: borderShift 3s ease infinite;
+  }
+  @keyframes borderShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .summary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 11px;
+    background: var(--surface);
+    z-index: -1;
+  }
+  .summary.visible::before {
+    opacity: 1;
+  }
+
+  /* ── Section headers ── */
+  .section { margin-bottom: 40px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text);
+    cursor: default;
+  }
+  .section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+  .section-header .label-default { transition: opacity 0.3s ease; }
+  .section-header .label-ai {
+    display: none;
+    color: var(--text);
+  }
+  .section-header .label-ai .bracket {
+    color: var(--accent);
+    font-weight: 300;
+    opacity: 0.5;
+  }
+  .section-header:hover .label-default { display: none; }
+  .section-header:hover .label-ai { display: inline; }
+
+  /* ── Skills as neural activations ── */
+  .skills-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .skill-layer {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .skill-layer-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    min-width: 70px;
+    padding-top: 4px;
+    text-align: right;
+  }
+
+  .skill-nodes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .skill-node {
+    padding: 5px 14px;
+    background: var(--surface);
+    border: 1px solid rgba(180, 160, 232, 0.25);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .skill-node:hover {
+    transform: translateY(-2px);
+    border-color: #b4a0e8;
+    box-shadow: 0 0 20px rgba(180, 160, 232, 0.15);
+  }
+
+  /* Skill active state (when selected to show connections) */
+  .skill-node.active {
+    transform: translateY(-2px);
+    z-index: 2;
+    border-color: #b4a0e8;
+    box-shadow: 0 0 24px rgba(180, 160, 232, 0.3);
+    background: rgba(180, 160, 232, 0.15);
+  }
+
+  /* Experience items dimming when a skill is selected */
+  .experience-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.4s ease, box-shadow 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .experience-item:hover {
+    border-color: rgba(180, 160, 232, 0.25);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  .experience-item.expanded {
+    border-color: rgba(180, 160, 232, 0.15);
+  }
+
+  /* When a skill is selected, dim unrelated experiences */
+  .experience-item.dimmed {
+    opacity: 0.25;
+    transform: scale(0.99);
+  }
+  .experience-item.highlighted {
+    border-color: rgba(180, 160, 232, 0.5) !important;
+    box-shadow: 0 0 24px rgba(180, 160, 232, 0.08);
+  }
+
+  .exp-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 16px;
+  }
+
+  .exp-indicator {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+    transition: box-shadow 0.3s ease;
+  }
+  .exp-indicator::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+  }
+  .experience-item:hover .exp-indicator {
+    box-shadow: 0 0 8px 3px currentColor, 0 0 16px 6px currentColor;
+  }
+  .experience-item:hover .exp-indicator::after {
+    opacity: 0.7;
+  }
+
+  .exp-info { flex: 1; }
+  .exp-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .exp-company {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .exp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .exp-toggle {
+    font-size: 14px;
+    color: var(--text-muted);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+  .expanded .exp-toggle { transform: rotate(180deg); }
+
+  .exp-details {
+    overflow: hidden;
+    padding: 0 20px 0 46px;
+    height: 0;
+    opacity: 0;
+    transition: height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.4s ease;
+  }
+  .expanded .exp-details {
+    padding-bottom: 20px;
+    opacity: 1;
+  }
+
+  .exp-details ul {
+    list-style: none;
+    padding: 0;
+  }
+  .exp-details li {
+    font-size: 14px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.6;
+  }
+  .exp-details li::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 10px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--dot-color, var(--accent));
+    box-shadow: 0 0 4px var(--dot-color, var(--accent));
+    opacity: 0.7;
+  }
+
+  /* Connection lines between experience items */
+  .timeline-line {
+    width: 2px;
+    position: absolute;
+    left: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(180, 160, 232, 0.5), rgba(107, 163, 247, 0.5), rgba(125, 211, 192, 0.5));
+    box-shadow: 0 0 8px rgba(180, 160, 232, 0.3), 0 0 16px rgba(180, 160, 232, 0.15);
+    transform-origin: top;
+    transform: scaleY(0);
+    transition: opacity 0.4s ease;
+  }
+  .timeline-pulse {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 8px #b4a0e8, 0 0 16px #b4a0e8, 0 0 24px #6ba3f7;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0;
+  }
+  .timeline-pulse.active {
+    opacity: 1;
+    animation: travelDown var(--travel-duration, 400ms) ease-in forwards;
+  }
+  @keyframes travelDown {
+    0% { top: var(--start-y); opacity: 1; }
+    80% { opacity: 1; }
+    100% { top: var(--end-y); opacity: 0; }
+  }
+  .exp-indicator.flash {
+    animation: dotFlash 600ms ease-out;
+  }
+  @keyframes dotFlash {
+    0% { box-shadow: 0 0 12px 6px currentColor, 0 0 24px 12px currentColor; }
+    100% { box-shadow: none; }
+  }
+  .timeline-line.dimmed { opacity: 0.15; }
+
+  /* ── Education ── */
+  .education-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .edu-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: all 0.4s ease;
+  }
+  .edu-item.highlighted {
+    border-color: rgba(180, 160, 232, 0.5) !important;
+    box-shadow: 0 0 24px rgba(180, 160, 232, 0.08);
+  }
+  .edu-item.dimmed { opacity: 0.3; }
+  .edu-item h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .edu-item p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+
+
+  /* Skill interaction hint */
+  .skill-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-left: 10px;
+    opacity: 0.6;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<!-- Living network background canvas -->
+<canvas id="gridCanvas"></canvas>
+<canvas id="networkCanvas"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Andrew Wei</h1>
+    <div class="role">AI Engineer</div>
+    <div class="contact-chip">
+      <a href="mailto:andrewei88@gmail.com">andrewei88@gmail.com</a> <span class="chip-sep"></span> <a href="https://www.linkedin.com/in/andrew-wei-613b8a31/" target="_blank">LinkedIn</a> <span class="chip-sep"></span> Los Altos, CA
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary reveal">
+    <div class="summary-inner">
+      <div class="summary-line"><span class="summary-dot"></span>8+ years at Google, startups, and enterprise SaaS.</div>
+      <div class="summary-line"><span class="summary-dot"></span>Bridging engineering and customer-facing roles.</div>
+      <div class="summary-line"><span class="summary-dot"></span>Now building AI apps with Claude Code.</div>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="section reveal delay-1">
+    <div class="section-header"><span class="label-default">Skills</span><span class="label-ai"><span class="bracket">&lt;</span>learned_weights<span class="bracket">&gt;</span></span><span class="skill-hint">(select a skill)</span></div>
+    <div class="skills-grid">
+      <div class="skill-layer">
+        <div class="skill-layer-label">AI & ML</div>
+        <div class="skill-nodes">
+          <span class="skill-node" data-skills="claude-code" data-related="independent">Claude Code</span>
+          <span class="skill-node" data-skills="prompt-eng" data-related="independent">Prompt Eng.</span>
+          <span class="skill-node" data-skills="ccai" data-related="ccai">CCAI</span>
+          <span class="skill-node" data-skills="dialogflow" data-related="ccai,assistant">Dialogflow</span>
+          <span class="skill-node" data-skills="nlp" data-related="ccai,assistant,independent">NLP</span>
+          <span class="skill-node" data-skills="stt-tts" data-related="ccai,assistant,independent">STT/TTS</span>
+        </div>
+      </div>
+      <div class="skill-layer">
+        <div class="skill-layer-label">Code</div>
+        <div class="skill-nodes">
+          <span class="skill-node" data-skills="python" data-related="independent,amberflo,ccai">Python</span>
+          <span class="skill-node" data-skills="javascript" data-related="independent,amberflo,google-web,google-fiber">JavaScript/TypeScript</span>
+          <span class="skill-node" data-skills="java" data-related="google-fiber">Java</span>
+          <span class="skill-node" data-skills="sql" data-related="servicenow,google-web,google-fiber">SQL</span>
+        </div>
+      </div>
+      <div class="skill-layer">
+        <div class="skill-layer-label">Cloud</div>
+        <div class="skill-nodes">
+          <span class="skill-node" data-skills="gcp" data-related="google-web,ccai,assistant,google-fiber">GCP</span>
+          <span class="skill-node" data-skills="aws" data-related="amberflo">AWS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Experience -->
+  <div class="section">
+    <div class="section-header reveal delay-2"><span class="label-default">Experience</span><span class="label-ai"><span class="bracket">&lt;</span>training_data<span class="bracket">&gt;</span></span></div>
+
+    <div class="experience-list" style="position: relative;">
+
+    <div class="experience-item expanded reveal delay-2" data-role="independent" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
+        <div class="exp-info">
+          <div class="exp-title">AI Engineer</div>
+          <div class="exp-company">Independent</div>
+        </div>
+        <div class="exp-meta">Mar 2026 →</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>Build and ship apps with Claude Code, from prompt engineering to production deployment
+            <ul>
+              <li>Child Development Tracker: builds a knowledge graph in Obsidian to track 29 developmental skills across multiple inputs (terminal, Telegram, file imports) with adaptive suggestions</li>
+              <li>A.R.Y.A. (Augmented Reality Youth App): iOS app that teaches toddlers words via camera using Vision + CoreML dual-model classification and real-time segmentation</li>
+            </ul>
+          </li>
+          <li>Document learnings to teach others how to build with these tools</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="experience-item reveal delay-2" data-role="servicenow" style="--dot-color: #6ba3f7;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #6ba3f7; background: #6ba3f7;"></div>
+        <div class="exp-info">
+          <div class="exp-title">Senior Technical Support Engineer</div>
+          <div class="exp-company">ServiceNow</div>
+        </div>
+        <div class="exp-meta">Feb 2025 – Mar 2026</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>Diagnosed complex platform issues by tracing system logs (Splunk, node/transaction logs) and performing root cause analysis</li>
+          <li>Wrote custom scripts and guided enterprise customers through technical configuration</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="experience-item reveal delay-3" data-role="amberflo" style="--dot-color: #7dd3c0;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #7dd3c0; background: #7dd3c0;"></div>
+        <div class="exp-info">
+          <div class="exp-title">Technical Solutions Engineer</div>
+          <div class="exp-company">Amberflo</div>
+        </div>
+        <div class="exp-meta">Aug 2023 – Jun 2024</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>First SE hire; owned full customer lifecycle solo: discovery, demos, architecture design, onboarding, and ongoing technical support</li>
+          <li>Built PoCs in Python and JavaScript on AWS (SAM, CloudFormation, EC2, S3) demonstrating API integration for metering and billing</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="experience-item reveal delay-3" data-role="assistant" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
+        <div class="exp-info">
+          <div class="exp-title">Partner Engineer, Google Assistant</div>
+          <div class="exp-company">Google</div>
+        </div>
+        <div class="exp-meta">Dec 2021 – Mar 2023</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>Built sample apps and PoCs integrating Google Assistant APIs; served as technical reference for partner implementations</li>
+          <li>Technical point of contact for partner integrations: architecture reviews, troubleshooting, and knowledge transfer</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="experience-item reveal delay-3" data-role="google-web" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
+        <div class="exp-info">
+          <div class="exp-title">Web Solutions Engineer</div>
+          <div class="exp-company">Google</div>
+        </div>
+        <div class="exp-meta">Jun 2020 – Dec 2021</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>Built features for internal analytics tool (PlayHub) and created KPI dashboards (DAU, MAU, L7, L28); managed 3 contractors</li>
+          <li>Optimized database queries to reduce latency; created design docs for feature implementation</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="experience-item reveal delay-4" data-role="ccai" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
+        <div class="exp-info">
+          <div class="exp-title">Partner Engineer, Contact Center AI</div>
+          <div class="exp-company">Google (via Artech)</div>
+        </div>
+        <div class="exp-meta">Mar 2019 – Jun 2020</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>Integrated Contact Center AI (Dialogflow, STT, TTS, NLP) into partner contact centers</li>
+          <li>Built virtual agent PoCs and created data flow architecture diagrams to demonstrate AI value to enterprise customers</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="experience-item reveal delay-4" data-role="google-fiber" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+      <div class="exp-header">
+        <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
+        <div class="exp-info">
+          <div class="exp-title">Software Engineer</div>
+          <div class="exp-company">Google (via Artech)</div>
+        </div>
+        <div class="exp-meta">Jun 2018 – Mar 2019</div>
+        <div class="exp-toggle">▾</div>
+      </div>
+      <div class="exp-details">
+        <ul>
+          <li>Built customer-facing pages in Angular/TypeScript/Dart; debugged full-stack issues across frontend, backend, and database</li>
+          <li>Wrote design docs and created unit/functional/screenshot tests; performed A/B testing to optimize page variants</li>
+        </ul>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- Education -->
+  <div class="section reveal delay-4">
+    <div class="section-header"><span class="label-default">Education</span><span class="label-ai"><span class="bracket">&lt;</span>pre_training<span class="bracket">&gt;</span></span></div>
+    <div class="education-grid">
+      <div class="edu-item" data-role="uci">
+        <h4>UC Irvine</h4>
+        <p>B.S. Computer Science (AI Concentration)</p>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 4px;">2014–2016</p>
+      </div>
+      <div class="edu-item" data-role="ucsb">
+        <h4>UC Santa Barbara</h4>
+        <p>B.A. Business Economics</p>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 4px;">2009–2011</p>
+      </div>
+      <div class="edu-item">
+        <h4>Languages</h4>
+        <p>English (native)</p>
+        <p>Mandarin Chinese (fluent)</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Perspective grid ──
+const gridCanvas = document.getElementById('gridCanvas');
+const gridCtx = gridCanvas.getContext('2d');
+
+function resizeGridCanvas() {
+  gridCanvas.width = window.innerWidth;
+  gridCanvas.height = window.innerHeight;
+}
+resizeGridCanvas();
+
+function drawGrid() {
+  const w = gridCanvas.width;
+  const h = gridCanvas.height;
+  gridCtx.clearRect(0, 0, w, h);
+
+  const horizon = h * 0.5;
+  const vanishX = w * 0.5;
+  const gridColor = 'rgba(180, 160, 232, ';
+  const numLines = 30;
+  const spacing = 80;
+
+  // Horizontal lines with perspective (below horizon recedes away)
+  for (let i = 0; i < numLines; i++) {
+    const t = i / numLines;
+    // Exponential spacing for perspective
+    const perspT = Math.pow(t, 2.5);
+    const y = horizon + perspT * (h - horizon + 100);
+    const opacity = (1 - t * 0.7) * 0.06;
+
+    gridCtx.beginPath();
+    gridCtx.moveTo(0, y);
+    gridCtx.lineTo(w, y);
+    gridCtx.strokeStyle = gridColor + opacity + ')';
+    gridCtx.lineWidth = 1 - t * 0.5;
+    gridCtx.stroke();
+  }
+
+  // Vertical lines converging to vanishing point
+  const numVLines = 24;
+  for (let i = -numVLines / 2; i <= numVLines / 2; i++) {
+    const bottomX = vanishX + i * spacing;
+    const opacity = Math.max(0.02, 0.05 - Math.abs(i) * 0.003);
+
+    gridCtx.beginPath();
+    gridCtx.moveTo(vanishX, horizon);
+    gridCtx.lineTo(bottomX, h + 50);
+    gridCtx.strokeStyle = gridColor + opacity + ')';
+    gridCtx.lineWidth = 0.5;
+    gridCtx.stroke();
+  }
+
+  // Top grid (ceiling, more subtle)
+  for (let i = 0; i < numLines / 2; i++) {
+    const t = i / (numLines / 2);
+    const perspT = Math.pow(t, 2.5);
+    const y = horizon - perspT * horizon;
+    const opacity = (1 - t * 0.7) * 0.025;
+
+    gridCtx.beginPath();
+    gridCtx.moveTo(0, y);
+    gridCtx.lineTo(w, y);
+    gridCtx.strokeStyle = gridColor + opacity + ')';
+    gridCtx.lineWidth = 0.5;
+    gridCtx.stroke();
+  }
+
+  // Top vertical lines converging
+  for (let i = -numVLines / 2; i <= numVLines / 2; i++) {
+    const topX = vanishX + i * spacing;
+    const opacity = Math.max(0.01, 0.025 - Math.abs(i) * 0.002);
+
+    gridCtx.beginPath();
+    gridCtx.moveTo(vanishX, horizon);
+    gridCtx.lineTo(topX, -50);
+    gridCtx.strokeStyle = gridColor + opacity + ')';
+    gridCtx.lineWidth = 0.5;
+    gridCtx.stroke();
+  }
+
+  // Horizon glow
+  const horizonGrad = gridCtx.createLinearGradient(0, horizon - 40, 0, horizon + 40);
+  horizonGrad.addColorStop(0, 'transparent');
+  horizonGrad.addColorStop(0.5, 'rgba(180, 160, 232, 0.04)');
+  horizonGrad.addColorStop(1, 'transparent');
+  gridCtx.fillStyle = horizonGrad;
+  gridCtx.fillRect(0, horizon - 40, w, 80);
+}
+
+drawGrid();
+window.addEventListener('resize', () => {
+  resizeGridCanvas();
+  drawGrid();
+});
+
+// ── Living network background ──
+const canvas = document.getElementById('networkCanvas');
+const ctx = canvas.getContext('2d');
+let nodes = [];
+let mouse = { x: -1000, y: -1000 };
+let dragNode = null;
+let isDragging = false;
+let hoverNode = null;
+let pulses = []; // { fromNode, toNode, progress (0-1), color }
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function getNodeAtPoint(x, y) {
+  // Check nodes in reverse order (nearest/largest first) for better hit detection
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    const dx = node.x - x;
+    const dy = node.y - y;
+    const hitRadius = Math.max(node.baseR * 2, 15); // generous hit area
+    if (dx * dx + dy * dy < hitRadius * hitRadius) {
+      return node;
+    }
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const node = getNodeAtPoint(e.clientX, e.clientY);
+  if (node) {
+    dragNode = node;
+    isDragging = true;
+    dragNode.dragging = true;
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+document.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+
+  if (isDragging && dragNode) {
+    dragNode.x = e.clientX;
+    dragNode.y = e.clientY;
+  } else {
+    // Update cursor and hover state
+    const node = getNodeAtPoint(e.clientX, e.clientY);
+    hoverNode = node;
+    canvas.style.cursor = node ? 'grab' : 'default';
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragNode) {
+    // Fire pulses along all connected edges
+    for (const node of nodes) {
+      if (node === dragNode) continue;
+      const zDiff = Math.abs(dragNode.z - node.z);
+      if (zDiff > 0.5) continue;
+      const dx = dragNode.x - node.x;
+      const dy = dragNode.y - node.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const nodeDist = 280 + ((dragNode.z + node.z) / 2) * 180;
+      if (dist < nodeDist) {
+        pulses.push({
+          fromNode: dragNode,
+          toNode: node,
+          progress: 0,
+          color: dragNode.color
+        });
+      }
+    }
+    dragNode.dragging = false;
+    dragNode = null;
+  }
+  isDragging = false;
+  canvas.style.cursor = 'default';
+});
+
+// Create nodes with z-depth for 3D effect
+// z: 0 = far away (small, dim, slow), 1 = close (big, bright, fast)
+const colors = ['#b4a0e8', '#6ba3f7', '#7dd3c0'];
+const nodeCount = 75;
+for (let i = 0; i < nodeCount; i++) {
+  const z = Math.random(); // depth: 0 = far, 1 = near
+  nodes.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    z: z,
+    vx: (Math.random() - 0.5) * (0.15 + z * 0.5),
+    vy: (Math.random() - 0.5) * (0.15 + z * 0.5),
+    baseR: 1 + z * z * 18,
+    color: colors[i % 3],
+    baseOpacity: 0.04 + z * z * 0.4,
+    pulseOffset: Math.random() * Math.PI * 2,
+    dragging: false
+  });
+}
+
+// Sort by z so far nodes draw first (behind near ones)
+nodes.sort((a, b) => a.z - b.z);
+
+// Background particles — distant "stars" for depth/texture
+const particles = [];
+const particleCount = 300;
+for (let i = 0; i < particleCount; i++) {
+  const pColors = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff', '#b4a0e8', '#6ba3f7', '#7dd3c0'];
+  particles.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    size: 0.5 + Math.random() * 1.5,
+    opacity: 0.15 + Math.random() * 0.3,
+    drift: (Math.random() - 0.5) * 0.1,
+    twinkleOffset: Math.random() * Math.PI * 2,
+    color: pColors[Math.floor(Math.random() * pColors.length)]
+  });
+}
+
+function drawNetwork() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const time = Date.now() * 0.001;
+
+  // 0. Draw background particles (behind everything)
+  for (const p of particles) {
+    p.x += p.drift;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+
+    const twinkle = 0.7 + Math.sin(time * 0.8 + p.twinkleOffset) * 0.3;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.opacity * twinkle;
+    ctx.fill();
+  }
+
+  // 1. Update all node positions first
+  for (const node of nodes) {
+    // Skip movement for dragged node — it follows the cursor directly
+    if (node.dragging) {
+      node.vx = 0;
+      node.vy = 0;
+    } else {
+      node.x += node.vx;
+      node.y += node.vy;
+
+      // Bounce off edges
+      if (node.x < -20 || node.x > canvas.width + 20) node.vx *= -1;
+      if (node.y < -20 || node.y > canvas.height + 20) node.vy *= -1;
+    }
+
+    const pulse = Math.sin(time * 0.6 + node.pulseOffset) * 0.2 + 0.8;
+    node._r = node.baseR * pulse;
+    node._opacity = node.baseOpacity * pulse;
+  }
+
+  // 2. Draw all connections (behind everything)
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const zDiff = Math.abs(nodes[i].z - nodes[j].z);
+      if (zDiff > 0.5) continue;
+
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const dist2d = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = 280 + ((nodes[i].z + nodes[j].z) / 2) * 180;
+
+      if (dist2d < maxDist) {
+        const avgZ = (nodes[i].z + nodes[j].z) / 2;
+        const lineWidth = 0.5 + avgZ * avgZ * 4;
+        const lineOpacity = (1 - dist2d / maxDist) * (0.1 + avgZ * avgZ * 0.55);
+
+        // Shorten lines so they stop at the edge of each node
+        const angle = Math.atan2(dy, dx);
+        const r1 = nodes[i]._r;
+        const r2 = nodes[j]._r;
+        const x1 = nodes[i].x - Math.cos(angle) * r1;
+        const y1 = nodes[i].y - Math.sin(angle) * r1;
+        const x2 = nodes[j].x + Math.cos(angle) * r2;
+        const y2 = nodes[j].y + Math.sin(angle) * r2;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = lineOpacity;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // 2b. Draw and update pulses
+  for (let i = pulses.length - 1; i >= 0; i--) {
+    const p = pulses[i];
+    p.progress += 0.025; // ~0.5s at 60fps
+
+    if (p.progress > 1) {
+      pulses.splice(i, 1);
+      continue;
+    }
+
+    const from = p.fromNode;
+    const to = p.toNode;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+
+    // Shorten to node edges
+    const angle = Math.atan2(dy, dx);
+    const r1 = from._r;
+    const r2 = to._r;
+    const x1 = from.x + Math.cos(angle) * r1;
+    const y1 = from.y + Math.sin(angle) * r1;
+    const x2 = to.x - Math.cos(angle) * r2;
+    const y2 = to.y - Math.sin(angle) * r2;
+
+    // Pulse dot position along the line
+    const px = x1 + (x2 - x1) * p.progress;
+    const py = y1 + (y2 - y1) * p.progress;
+    const pulseAlpha = 1 - p.progress; // fade as it travels
+
+    // Bright line trail behind the pulse
+    const trailStart = Math.max(0, p.progress - 0.3);
+    const tx = x1 + (x2 - x1) * trailStart;
+    const ty = y1 + (y2 - y1) * trailStart;
+    const trailGrad = ctx.createLinearGradient(tx, ty, px, py);
+    trailGrad.addColorStop(0, 'transparent');
+    trailGrad.addColorStop(1, p.color);
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(px, py);
+    ctx.strokeStyle = trailGrad;
+    ctx.globalAlpha = pulseAlpha * 0.8;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Bright pulse dot
+    const dotGrad = ctx.createRadialGradient(px, py, 0, px, py, 6);
+    dotGrad.addColorStop(0, '#ffffff');
+    dotGrad.addColorStop(0.4, p.color);
+    dotGrad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.fillStyle = dotGrad;
+    ctx.globalAlpha = pulseAlpha;
+    ctx.fill();
+  }
+
+  // 3. Draw all nodes on top (sorted far-to-near)
+  for (const node of nodes) {
+    const r = node._r;
+    const opacity = node._opacity;
+    const isActive = (node === hoverNode || node === dragNode);
+    const glowMult = isActive ? 2.5 : 1;
+
+    // Outer bloom (large, soft)
+    const bloomSize = r * (4 + node.z * 5) * (isActive ? 1.5 : 1);
+    const bloom = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, bloomSize);
+    bloom.addColorStop(0, node.color);
+    bloom.addColorStop(0.3, node.color);
+    bloom.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, bloomSize, 0, Math.PI * 2);
+    ctx.fillStyle = bloom;
+    ctx.globalAlpha = Math.min(opacity * 0.12 * glowMult, 0.6);
+    ctx.fill();
+
+    // Inner glow
+    const glowSize = r * (2 + node.z * 2) * (isActive ? 1.3 : 1);
+    const gradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, glowSize);
+    gradient.addColorStop(0, '#ffffff');
+    gradient.addColorStop(0.3, node.color);
+    gradient.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, glowSize, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.globalAlpha = Math.min(opacity * 0.4 * glowMult, 0.9);
+    ctx.fill();
+
+    // Core — solid fill covers any line underneath
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#000000';
+    ctx.globalAlpha = 1;
+    ctx.fill();
+
+    // Core color with bright center
+    if (isActive) {
+      // Active: white-hot center radiating to node color
+      const coreGrad = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, r);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.5, '#ffffff');
+      coreGrad.addColorStop(0.8, node.color);
+      coreGrad.addColorStop(1, node.color);
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = coreGrad;
+      ctx.globalAlpha = 1;
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = node.color;
+      ctx.globalAlpha = opacity;
+      ctx.fill();
+
+      // Hot white center for close nodes
+      if (node.z > 0.5) {
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, r * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = opacity * 0.5;
+        ctx.fill();
+      }
+    }
+  }
+
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(drawNetwork);
+}
+drawNetwork();
+
+// ── Scroll reveal ──
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+
+      // Stagger skill nodes within this element
+      const skillNodes = entry.target.querySelectorAll('.skill-node');
+      skillNodes.forEach((node, i) => {
+        setTimeout(() => node.classList.add('visible'), i * 50);
+      });
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+// Also observe the summary separately for its gradient bar
+document.querySelectorAll('.summary').forEach(el => observer.observe(el));
+
+// ── Skill → Experience connections ──
+const skillNodes = document.querySelectorAll('.skill-node');
+const expItems = document.querySelectorAll('.experience-item');
+const eduItems = document.querySelectorAll('.edu-item');
+
+let activeSkill = null;
+
+function clearSkillSelection() {
+  activeSkill = null;
+  skillNodes.forEach(n => n.classList.remove('active'));
+  expItems.forEach(exp => {
+    exp.classList.remove('highlighted', 'dimmed');
+  });
+  eduItems.forEach(edu => {
+    edu.classList.remove('dimmed');
+  });
+  document.querySelectorAll('.timeline-line').forEach(c => c.classList.remove('dimmed'));
+}
+
+skillNodes.forEach(node => {
+  node.addEventListener('click', (e) => {
+    e.stopPropagation();
+
+    // Deselect if clicking the same skill
+    if (activeSkill === node) {
+      // Restore all items to their previous expand state
+      expItems.forEach(exp => {
+        if (exp._wasExpanded) {
+          if (!exp.classList.contains('expanded')) toggleExpand(exp);
+        } else {
+          if (exp.classList.contains('expanded')) toggleExpand(exp);
+        }
+        delete exp._wasExpanded;
+      });
+      clearSkillSelection();
+      return;
+    }
+
+    // If switching from another skill, restore first
+    if (activeSkill) {
+      expItems.forEach(exp => {
+        if (exp._wasExpanded) {
+          if (!exp.classList.contains('expanded')) toggleExpand(exp);
+        } else {
+          if (exp.classList.contains('expanded')) toggleExpand(exp);
+        }
+        delete exp._wasExpanded;
+      });
+      clearSkillSelection();
+    }
+
+    // Save current expand state before changing
+    expItems.forEach(exp => {
+      exp._wasExpanded = exp.classList.contains('expanded');
+    });
+
+    activeSkill = node;
+    const related = (node.dataset.related || '').split(',');
+    skillNodes.forEach(n => n.classList.remove('active'));
+    node.classList.add('active');
+
+    expItems.forEach(exp => {
+      if (related.includes(exp.dataset.role)) {
+        exp.classList.add('highlighted');
+        exp.classList.remove('dimmed');
+        // Expand relevant items
+        if (!exp.classList.contains('expanded')) toggleExpand(exp);
+      } else {
+        exp.classList.add('dimmed');
+        exp.classList.remove('highlighted');
+        // Collapse non-relevant items
+        if (exp.classList.contains('expanded')) toggleExpand(exp);
+      }
+    });
+
+    eduItems.forEach(edu => {
+      edu.classList.add('dimmed');
+    });
+
+    document.querySelectorAll('.timeline-line').forEach(c => c.classList.add('dimmed'));
+  });
+});
+
+// Click anywhere else to deselect (but not on experience items)
+document.addEventListener('click', (e) => {
+  if (activeSkill && !e.target.closest('.skill-node') && !e.target.closest('.experience-item')) {
+    expItems.forEach(exp => {
+      if (exp._wasExpanded) {
+        if (!exp.classList.contains('expanded')) toggleExpand(exp);
+      } else {
+        if (exp.classList.contains('expanded')) toggleExpand(exp);
+      }
+      delete exp._wasExpanded;
+    });
+    clearSkillSelection();
+  }
+});
+
+// ── Expand/collapse experience items ──
+function toggleExpand(item) {
+  const details = item.querySelector('.exp-details');
+  if (item.classList.contains('expanded')) {
+    // Collapse: set explicit height first, then transition to 0
+    details.style.height = details.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      details.style.height = '0px';
+    });
+    item.classList.remove('expanded');
+  } else {
+    // Expand: measure content height and transition to it
+    item.classList.add('expanded');
+    const targetHeight = details.scrollHeight;
+    details.style.height = targetHeight + 'px';
+    // After transition, remove fixed height so content can reflow
+    details.addEventListener('transitionend', function handler() {
+      if (item.classList.contains('expanded')) {
+        details.style.height = 'auto';
+      }
+      details.removeEventListener('transitionend', handler);
+    });
+  }
+}
+
+// Initialize any already-expanded items
+document.querySelectorAll('.experience-item.expanded').forEach(item => {
+  const details = item.querySelector('.exp-details');
+  if (details) details.style.height = 'auto';
+});
+
+// ── Timeline connectors (dot-to-dot) ──
+const expList = document.querySelector('.experience-list');
+const expItemsAll = expList.querySelectorAll('.experience-item');
+const timelineLines = [];
+
+// Create connector elements once
+function createTimelineLines() {
+  // Remove old ones
+  expList.querySelectorAll('.timeline-line').forEach(c => c.remove());
+  timelineLines.length = 0;
+
+  for (let i = 0; i < expItemsAll.length - 1; i++) {
+    const connector = document.createElement('div');
+    connector.className = 'timeline-line';
+    expList.appendChild(connector);
+    timelineLines.push(connector);
+  }
+}
+
+// Reposition connectors based on current dot positions
+function repositionLines() {
+  const listRect = expList.getBoundingClientRect();
+
+  for (let i = 0; i < timelineLines.length; i++) {
+    const dotA = expItemsAll[i].querySelector('.exp-indicator');
+    const dotB = expItemsAll[i + 1].querySelector('.exp-indicator');
+
+    const rectA = dotA.getBoundingClientRect();
+    const rectB = dotB.getBoundingClientRect();
+
+    const radiusA = rectA.height / 2 + 3;
+    const radiusB = rectB.height / 2 + 3;
+    const topY = rectA.top + rectA.height / 2 + radiusA - listRect.top;
+    const bottomY = rectB.top + rectB.height / 2 - radiusB - listRect.top;
+    const leftX = rectA.left + rectA.width / 2 - listRect.left - 1; // -1 to center the 2px wide line
+
+    if (bottomY <= topY) {
+      timelineLines[i].style.height = '0px';
+      continue;
+    }
+
+    timelineLines[i].style.top = topY + 'px';
+    timelineLines[i].style.left = leftX + 'px';
+    timelineLines[i].style.height = (bottomY - topY) + 'px';
+  }
+}
+
+// Track which connectors have been revealed and which have fired their pulse
+const lineRevealed = [];
+const linePulsed = [];
+
+// Animate connectors growing as user scrolls or on staggered load
+function updateLineScroll() {
+  const viewportBottom = window.innerHeight;
+  const now = performance.now();
+
+  for (let i = 0; i < timelineLines.length; i++) {
+    const nextCard = expItemsAll[i + 1];
+    const nextRect = nextCard.getBoundingClientRect();
+    const isInView = nextRect.top < viewportBottom * 0.9;
+
+    // First time this connector's target enters view — record the timestamp
+    if (isInView && !lineRevealed[i]) {
+      lineRevealed[i] = now;
+    }
+
+    if (!lineRevealed[i]) {
+      // Not yet triggered
+      timelineLines[i].style.transform = 'scaleY(0)';
+      continue;
+    }
+
+    // Grow over 500ms from when it was first triggered
+    const elapsed = now - lineRevealed[i];
+    const duration = 500;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic for smooth deceleration
+    const eased = 1 - Math.pow(1 - progress, 3);
+    timelineLines[i].style.transform = `scaleY(${eased})`;
+
+    // Fire pulse when line finishes growing
+    if (progress >= 1 && !linePulsed[i]) {
+      linePulsed[i] = true;
+      firePulse(i);
+    }
+  }
+}
+
+function firePulse(index) {
+  const line = timelineLines[index];
+  const dotB = expItemsAll[index + 1].querySelector('.exp-indicator');
+  const listRect = expList.getBoundingClientRect();
+
+  // Get line position
+  const lineTop = parseFloat(line.style.top);
+  const lineHeight = parseFloat(line.style.height);
+  const lineLeft = parseFloat(line.style.left);
+
+  // Create pulse element
+  const pulse = document.createElement('div');
+  pulse.className = 'timeline-pulse';
+  pulse.style.left = (lineLeft - 2) + 'px'; // center the 6px dot on the 2px line
+  pulse.style.setProperty('--start-y', lineTop + 'px');
+  pulse.style.setProperty('--end-y', (lineTop + lineHeight) + 'px');
+  pulse.style.top = lineTop + 'px';
+  pulse.style.setProperty('--travel-duration', '400ms');
+  expList.appendChild(pulse);
+
+  // Start animation
+  requestAnimationFrame(() => {
+    pulse.classList.add('active');
+  });
+
+  // Flash the target dot when pulse arrives
+  setTimeout(() => {
+    dotB.classList.add('flash');
+    setTimeout(() => dotB.classList.remove('flash'), 600);
+  }, 350);
+
+  // Clean up pulse element
+  setTimeout(() => pulse.remove(), 500);
+}
+
+createTimelineLines();
+
+// Continuously update connectors — handles both layout shifts and scroll animation
+function timelineLoop() {
+  repositionLines();
+  updateLineScroll();
+  requestAnimationFrame(timelineLoop);
+}
+timelineLoop();
+
+window.addEventListener('resize', repositionLines);
+
+// Patch toggleExpand to reposition connectors during animation
+const origToggle = toggleExpand;
+toggleExpand = function(item) {
+  origToggle(item);
+  const details = item.querySelector('.exp-details');
+  const onFrame = () => {
+    repositionLines();
+    updateLineScroll();
+    if (details.style.height !== 'auto' && details.style.height !== '0px') {
+      requestAnimationFrame(onFrame);
+    }
+  };
+  requestAnimationFrame(onFrame);
+  details.addEventListener('transitionend', () => { repositionLines(); updateLineScroll(); }, { once: true });
+};
+
+
+</script>
+
+</body>
+</html>
