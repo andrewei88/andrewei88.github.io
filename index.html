@@ -633,7 +633,7 @@
     <h1>Andrew Wei</h1>
     <div class="role">AI Engineer</div>
     <div class="contact-chip">
-      <a href="mailto:andrewei88@gmail.com">andrewei88@gmail.com</a> <span class="chip-sep"></span> <a href="https://www.linkedin.com/in/andrew-wei-613b8a31/" target="_blank">LinkedIn</a> <span class="chip-sep"></span> Los Altos, CA
+      <a href="mailto:andrewei88@gmail.com">andrewei88@gmail.com</a> <span class="chip-sep"></span> <a href="https://www.linkedin.com/in/andrew-wei-613b8a31/" target="_blank">LinkedIn</a> <span class="chip-sep"></span> <a href="https://github.com/andrewei88" target="_blank">GitHub</a> <span class="chip-sep"></span> <a href="https://x.com/w3n_AGI" target="_blank">X</a> <span class="chip-sep"></span> Los Altos, CA
     </div>
   </div>
 
@@ -686,7 +686,7 @@
 
     <div class="experience-list" style="position: relative;">
 
-    <div class="experience-item expanded reveal delay-2" data-role="independent" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+    <div class="experience-item expanded reveal delay-2" data-role="independent" style="--dot-color: #b4a0e8;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
         <div class="exp-info">
@@ -698,18 +698,20 @@
       </div>
       <div class="exp-details">
         <ul>
-          <li>Build and ship apps with Claude Code, from prompt engineering to production deployment
+          <li>Build and ship AI apps with Claude Code, from model training to production deployment
             <ul>
-              <li>Child Development Tracker: builds a knowledge graph in Obsidian to track 29 developmental skills across multiple inputs (terminal, Telegram, file imports) with adaptive suggestions</li>
-              <li>A.R.Y.A. (Augmented Reality Youth App): iOS app that teaches toddlers words via camera using Vision + CoreML dual-model classification and real-time segmentation</li>
+              <li><a href="https://x.com/w3n_AGI/status/2038489736172744942" target="_blank" style="color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(180, 160, 232, 0.4);">wtf</a>: codebase explorer that generates interactive HTML walkthroughs using tree-sitter parsing + AI annotations; 4-level drill-down from components to call chains</li>
+              <li><a href="https://x.com/w3n_AGI/status/2039095425026883948" target="_blank" style="color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(180, 160, 232, 0.4);">Seeky</a>: iOS app that turns real-world surroundings into a vocabulary game for toddlers; scavenger hunt mode with real-time object recognition via custom-trained FastViT model (154 classes, 105K images, 88.9% accuracy, 6.5MB on-device)</li>
+              <li><a href="https://x.com/w3n_AGI/status/2039199793487159355" target="_blank" style="color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(180, 160, 232, 0.4);">Ahead</a>: developmental milestone tracker in Obsidian covering 88 CDC-sourced skills across 5 domains; Telegram bot for hands-free logging, daycare report imports (text/PDF/photo), auto-generated pediatrician reports</li>
+              <li><a href="https://x.com/w3n_AGI/status/2036254981930754480" target="_blank" style="color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(180, 160, 232, 0.4);">INCMPRSBL</a>: article compressor that restructures each section into its natural format (tables, checklists, prose, flowcharts) based on the shape of the information; autoresearch-tuned across 19 articles, 93.5% accuracy</li>
             </ul>
           </li>
-          <li>Document learnings to teach others how to build with these tools</li>
+          <li>Publish technical writeups for each project covering motivation, design tradeoffs, and evaluation methodology</li>
         </ul>
       </div>
     </div>
 
-    <div class="experience-item reveal delay-2" data-role="servicenow" style="--dot-color: #6ba3f7;" onclick="toggleExpand(this)">
+    <div class="experience-item reveal delay-2" data-role="servicenow" style="--dot-color: #6ba3f7;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #6ba3f7; background: #6ba3f7;"></div>
         <div class="exp-info">
@@ -727,7 +729,7 @@
       </div>
     </div>
 
-    <div class="experience-item reveal delay-3" data-role="amberflo" style="--dot-color: #7dd3c0;" onclick="toggleExpand(this)">
+    <div class="experience-item reveal delay-3" data-role="amberflo" style="--dot-color: #7dd3c0;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #7dd3c0; background: #7dd3c0;"></div>
         <div class="exp-info">
@@ -745,7 +747,7 @@
       </div>
     </div>
 
-    <div class="experience-item reveal delay-3" data-role="assistant" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+    <div class="experience-item reveal delay-3" data-role="assistant" style="--dot-color: #b4a0e8;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
         <div class="exp-info">
@@ -763,7 +765,7 @@
       </div>
     </div>
 
-    <div class="experience-item reveal delay-3" data-role="google-web" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+    <div class="experience-item reveal delay-3" data-role="google-web" style="--dot-color: #b4a0e8;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
         <div class="exp-info">
@@ -781,7 +783,7 @@
       </div>
     </div>
 
-    <div class="experience-item reveal delay-4" data-role="ccai" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+    <div class="experience-item reveal delay-4" data-role="ccai" style="--dot-color: #b4a0e8;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
         <div class="exp-info">
@@ -799,7 +801,7 @@
       </div>
     </div>
 
-    <div class="experience-item reveal delay-4" data-role="google-fiber" style="--dot-color: #b4a0e8;" onclick="toggleExpand(this)">
+    <div class="experience-item reveal delay-4" data-role="google-fiber" style="--dot-color: #b4a0e8;" onclick="if(!event.target.closest('a'))toggleExpand(this)">
       <div class="exp-header">
         <div class="exp-indicator" style="color: #b4a0e8; background: #b4a0e8;"></div>
         <div class="exp-info">
